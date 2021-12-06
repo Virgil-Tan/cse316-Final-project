@@ -36,6 +36,10 @@ export default function AppBanner() {
         auth.logoutUser();
         store.logOut();
     }
+    let guessOout=<MenuItem onClick={handleLogout}>Logout</MenuItem>;
+    if(auth.guess){
+        guessOout=<MenuItem onClick={handleLogout}>Back</MenuItem>;
+    }
 
     const menuId = 'primary-search-account-menu';
     const loggedOutMenu = (
@@ -75,7 +79,7 @@ export default function AppBanner() {
             open={isMenuOpen}
             onClose={handleMenuClose}
         >
-            <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            {guessOout}
         </Menu>        
 
     let editToolbar = "";

@@ -2,8 +2,6 @@ import { createContext, useContext, useState } from 'react'
 import { useHistory } from 'react-router-dom'
 import jsTPS from '../common/jsTPS'
 import api from '../api'
-// import MoveItem_Transaction from '../transactions/MoveItem_Transaction'
-// import UpdateItem_Transaction from '../transactions/UpdateItem_Transaction'
 import AuthContext from '../auth'
 /*
     This is our global data store. Note that it uses the Flux design pattern,
@@ -33,8 +31,8 @@ export const GlobalStoreActionType = {
     COMMUNITY_PAGE:"COMMUNITY_PAGE",
     USER_NAME:"USER_NAME",
     LIST_NAME:"LIST_NAME",
-    LOG_OUT:"LOG_OUT"
-
+    LOG_OUT:"LOG_OUT",
+    AFTER_SEARCH:"AFTER_SEARCH_PAGE"
 }
 
 // WE'LL NEED THIS TO PROCESS TRANSACTIONS
@@ -287,7 +285,7 @@ function GlobalStoreContextProvider(props) {
                     allListPage:false,
                     communityPage:false,
                     userName:null,
-                    listName:null,
+                    listName:"Users List",
                 });
             }
 
@@ -307,7 +305,7 @@ function GlobalStoreContextProvider(props) {
                     allListPage:true,
                     communityPage:false,
                     userName:null,
-                    listName:null,
+                    listName:"All List",
                 });
             }
 
@@ -327,7 +325,27 @@ function GlobalStoreContextProvider(props) {
                     allListPage:false,
                     communityPage:true,
                     userName:null,
-                    listName:null,
+                    listName:"Community List",
+                });
+            }
+
+            case GlobalStoreActionType.AFTER_SEARCH: {
+                return setStore({
+                    idNamePairs: payload.idNamePairs,
+                    currentList: null,
+                    newListCounter: store.newListCounter,
+                    isListNameEditActive: false,
+                    isItemEditActive: false,
+                    listMarkedForDeletion: null,
+                    deleteActive:false,
+                    deleteName:null,
+
+                    homePage:store.homePage,
+                    userPage:store.userPage,
+                    allListPage:store.allListPage,
+                    communityPage:store.communityPage,
+                    userName:store.userName,
+                    listName:payload.listName,
                 });
             }
 
@@ -341,7 +359,7 @@ function GlobalStoreContextProvider(props) {
                     listMarkedForDeletion: null,
                     deleteActive:false,
                     deleteName:null,
-                    homePage:true,
+                    homePage:false,
                     userPage:false,
                     allListPage:false,
                     communityPage:false,
@@ -503,17 +521,6 @@ function GlobalStoreContextProvider(props) {
         }
     }
 
-    // store.addMoveItemTransaction = function (start, end) {
-    //     let transaction = new MoveItem_Transaction(store, start, end);
-    //     tps.addTransaction(transaction);
-    // }
-
-    // store.addUpdateItemTransaction = function (index, newText) {
-    //     let oldText = store.currentList.items[index];
-    //     let transaction = new UpdateItem_Transaction(store, index, oldText, newText);
-    //     tps.addTransaction(transaction);
-    // }
-
     store.moveItem = function (start, end) {
         start -= 1;
         end -= 1;
@@ -600,6 +607,9 @@ function GlobalStoreContextProvider(props) {
         let response = await api.getPublishedTop5List();
         if (response.data.success) {
             let listArray=response.data.list;
+            listArray.sort(function(a, b){
+                return b.published > a.published
+            });
             storeReducer({
                 type: GlobalStoreActionType.USERS_PAGE,
                 payload: listArray
@@ -611,6 +621,9 @@ function GlobalStoreContextProvider(props) {
         let response = await api.getPublishedTop5List();
         if (response.data.success) {
             let listArray=response.data.list;
+            listArray.sort(function(a, b){
+                return b.published > a.published
+            });
             storeReducer({
                 type: GlobalStoreActionType.ALL_LIST_PAGE,
                 payload: listArray
@@ -618,10 +631,77 @@ function GlobalStoreContextProvider(props) {
         }
     }
 
+
     store.isCommunityPage = async function () {
         let response = await api.getPublishedTop5List();
         if (response.data.success) {
             let listArray=response.data.list;
+
+            listArray.sort(function(a, b){
+                return b.name > a.name
+            });
+            let preName = ""
+            let myMap = new Map();
+            let len=listArray.length;
+            for(let i=0;i<len;i++){
+                if(listArray[i].name === preName){
+                    for(let j=0;j<5;j++){
+                        let key=listArray[i].items[j];
+                        if(myMap.has(key)){
+                            myMap.set(key,myMap.get(key)+(5-j));
+                        }else{
+                            myMap.set(key,5-j);
+                        }
+                    }
+                    listArray[i-1].votes[0]=0;
+                    listArray[i-1].votes[1]=0;
+                    listArray[i-1].votes[2]=0;
+                    listArray[i-1].votes[3]=0;
+                    listArray[i-1].votes[4]=0;
+                
+                }else{
+                    if(i !== 0){
+                        console.log(i);
+                        var arrayObj=Array.from(myMap);
+                        arrayObj.sort(function(a,b){return b[1]-a[1]});
+                        console.log(i);
+                        listArray[i-1].items[0]=arrayObj[0][0];
+                        listArray[i-1].votes[0]=arrayObj[0][1];
+                        listArray[i-1].items[1]=arrayObj[1][0];
+                        listArray[i-1].votes[1]=arrayObj[1][1];
+                        listArray[i-1].items[2]=arrayObj[2][0];
+                        listArray[i-1].votes[2]=arrayObj[2][1];
+                        listArray[i-1].items[3]=arrayObj[3][0];
+                        listArray[i-1].votes[3]=arrayObj[3][1];
+                        listArray[i-1].items[4]=arrayObj[4][0];
+                        listArray[i-1].votes[4]=arrayObj[4][1];
+                    }
+                    
+
+                    
+                    myMap = new Map();
+                    for(let j=0;j<5;j++){
+                        let key=listArray[i].items[j];
+                        myMap.set(key,5-j);
+                    }
+                    preName=listArray[i].name;
+                }
+            }
+            var arrayObj=Array.from(myMap);
+            arrayObj.sort(function(a,b){return b[1]-a[1]});
+        
+
+            listArray[len-1].items[0]=arrayObj[0][0];
+            listArray[len-1].votes[0]=arrayObj[0][1];
+            listArray[len-1].items[1]=arrayObj[1][0];
+            listArray[len-1].votes[1]=arrayObj[1][1];
+            listArray[len-1].items[2]=arrayObj[2][0];
+            listArray[len-1].votes[2]=arrayObj[2][1];
+            listArray[len-1].items[3]=arrayObj[3][0];
+            listArray[len-1].votes[3]=arrayObj[3][1];
+            listArray[len-1].items[4]=arrayObj[4][0];
+            listArray[len-1].votes[4]=arrayObj[4][1];
+
             storeReducer({
                 type: GlobalStoreActionType.COMMUNITY_PAGE,
                 payload: listArray
@@ -669,13 +749,40 @@ function GlobalStoreContextProvider(props) {
             response = await api.getTop5ListByListName(name);
         }
         if (response.data.success) {
-            let listArray=response.data.list;
-            storeReducer({
-                type: GlobalStoreActionType.LOAD_ID_NAME_PAIRS,
-                payload: listArray
-            });
+            if(store.userPage||store.allListPage){
+                let listArray=response.data.list;
+                storeReducer({
+                    type: GlobalStoreActionType.AFTER_SEARCH,
+                    payload: {
+                        idNamePairs:listArray,
+                        listName:name
+                    }
+                });
+            }else{
+                let listArray=response.data.list;
+                if(store.homePage){
+                    listArray=listArray.filter(function (item) {
+                        return item.ownerEmail===auth.user.email; 
+                    });
+                    console.log(listArray);
+                }
+                storeReducer({
+                    type: GlobalStoreActionType.LOAD_ID_NAME_PAIRS,
+                    payload: listArray
+                });
+            }
+            
         }
         else {
+            if(store.userPage||store.allListPage){
+                storeReducer({
+                    type: GlobalStoreActionType.AFTER_SEARCH,
+                    payload: {
+                        idNamePairs:null,
+                        listName:name
+                    }
+                });
+            }
             console.log("API FAILED TO GET THE LIST PAIRS");
         }
     }

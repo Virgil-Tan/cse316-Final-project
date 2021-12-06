@@ -44,20 +44,21 @@ const HomeScreen = () => {
     const [anchorEl, setAnchorEl] = useState(null);
     const [isMenuOpen, setisMenuOpen] = useState(false);
     const [isChanged, setisChanged] = useState(false);
+    const [sameNameError, setsameNameError] = useState(false);
     const [text, setText] = useState("");
     const [nameText, setNameText] = useState("");
     const divRef = React.useRef();
     const handleSortByNewDate = () => {
         let arr=store.idNamePairs;
         arr.sort(function(a, b){
-            return a.published > b.published
+            return b.published > a.published
         });
         handleMenuClose();
     };
 
     const handleSortByOldDate = () => {
         let arr=store.idNamePairs;
-        arr.sort(function(a, b){return b.published > a.published});
+        arr.sort(function(a, b){return a.published > b.published});
         handleMenuClose();
     };
 
@@ -128,6 +129,10 @@ const HomeScreen = () => {
         setText(event.target.value);
     }
 
+    function handleCloseSame(){
+        setsameNameError(false);
+    };
+
     function handleCloseEdit() {
         store.closeCurrentList();
     }
@@ -146,7 +151,38 @@ const HomeScreen = () => {
         setNameText(event.target.value);
     }
 
+    function checkName(name){
+        let arr=store.idNamePairs;
+        for(let i=0;i<arr.length;i++){
+            if(arr[i].ispublished&&arr[i].name === name){
+                setsameNameError(true);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function checkItem(){
+        let arr=store.currentList.items;
+        for(let i=0;i<arr.length-1;i++){
+            for(let j=i+1;j<arr.length;j++){
+                if(arr[i] === arr[j]){
+                    setsameNameError(true);
+                    return true;
+                }
+            }
+        }
+        return false;
+        
+    }
+
     function handleCanPublish() {
+        if(checkName(store.currentList.name)){
+            return;
+        }
+        if(checkItem()){
+            return;
+        }
         var myDate = new Date();
         let date = myDate.toLocaleDateString();
         store.currentList.published=date;
@@ -353,6 +389,19 @@ const HomeScreen = () => {
                     <Alert severity="warning">Do you want to delete {store.deleteName}</Alert>
                     <Button onClick={DeleteList}>YES</Button>
                     <Button onClick={handleClose}>NO</Button>
+                </Box>
+            </Modal>
+
+            {/* ******************************* */}
+            <Modal
+                open={sameNameError}
+                aria-labelledby="parent-modal-title"
+                aria-describedby="parent-modal-description"
+            >
+                <Box sx={{ ...style, width: 400 }}>
+                    <h2 id="parent-modal-title">Warning</h2>
+                    <Alert severity="warning">You cannot publish two lists with the same name/item</Alert>
+                    <Button onClick={handleCloseSame}>OK</Button>
                 </Box>
             </Modal>
         </div>

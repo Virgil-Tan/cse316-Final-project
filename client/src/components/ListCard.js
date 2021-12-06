@@ -24,6 +24,7 @@ function ListCard(props) {
     const { store } = useContext(GlobalStoreContext);
     const { auth } = useContext(AuthContext);
     const [expandActive, setExpandActive] = useState(false);
+    const [likeOrDis, setlikeOrDis] = useState(false);
     const [text, setText] = useState("");
     const { idNamePair } = props;
 
@@ -51,15 +52,25 @@ function ListCard(props) {
     }
 
     function handLikes() {
-
+        if(likeOrDis){
+            let num=idNamePair.dislikes;
+            idNamePair.dislikes=num-1;
+        }else{
+            setlikeOrDis(true);
+        }
         let num=idNamePair.likes;
         idNamePair.likes=num+1;
-        
         store.updateItem(idNamePair._id,idNamePair);
         
     }
 
     function handDislikes() {
+        if(likeOrDis){
+            let num=idNamePair.likes;
+            idNamePair.likes=num-1;
+        }else{
+            setlikeOrDis(true);
+        }
         let num=idNamePair.dislikes;
         idNamePair.dislikes=num+1;
         
@@ -74,10 +85,13 @@ function ListCard(props) {
 
     function handleKeyPress(event) {
         if (event.code === "Enter") {
-            
+            console.log(auth.user.firstName);
+            console.log(auth.user.lastName);
+            console.log(text);
+            let temp=auth.user.firstName+" "+auth.user.lastName+"|"+text;
             let comment=idNamePair.comment;
             
-            comment.push(text);
+            comment.push(temp);
             idNamePair.comment=comment;
            
             store.updateItem(idNamePair._id,idNamePair);
@@ -133,13 +147,17 @@ function ListCard(props) {
         </IconButton>
     }
 
+    let authorName=<Typography style={{fontSize:'8pt'}}>{"By: "+idNamePair.author}</Typography>;
+    if(store.communityPage){
+        authorName=<div></div>;
+    }
 
     let cardElement =
         <ListItem
             className="listItem"
             id={idNamePair._id}
             key={idNamePair._id}
-            sx={{ marginTop: '5px', display: 'flex', p: 1 ,border: 2,borderRadius: 5,bgcolor: 'background.paper'}}
+            sx={{ marginTop: '5px', display: 'flex', p: 1 ,border: 2,borderRadius: 5,bgcolor: idNamePair.ispublished?'#c0b7f1':'Bisque'}}
             style={{
                 height: '120px',
                 width: '100%'
@@ -148,17 +166,17 @@ function ListCard(props) {
                 <div id="left-item-button">
                     <Box sx={{ p: 1, flexGrow: 1 }}>
                         <Typography style={{fontSize:'15pt'}}>{idNamePair.name}</Typography>
-                        <Typography style={{fontSize:'8pt'}}>{"By: "+idNamePair.author}</Typography>
+                        {authorName}
                     </Box>
                 </div>
                 <div id="right-item-button">
                     <Box sx={{ p: 1 }}>
-                        <IconButton onClick={handLikes} aria-label='like'>
+                        <IconButton disabled={auth.guess} onClick={handLikes} aria-label='like'>
                             <ThumbUpIcon style={{fontSize:'20pt'}} />
                             <Typography style={{fontSize:'10pt'}}>{idNamePair.likes}</Typography>
                         </IconButton>
 
-                        <IconButton onClick={handDislikes} aria-label='dislike'>
+                        <IconButton disabled={auth.guess} onClick={handDislikes} aria-label='dislike'>
                             <ThumbDownIcon style={{fontSize:'20pt'}} />
                             <Typography style={{fontSize:'10pt'}}>{idNamePair.dislikes}</Typography>
                         </IconButton>
@@ -200,17 +218,17 @@ function ListCard(props) {
                 <div id="left-item-button">
                     <Box sx={{ p: 1, flexGrow: 1 }}>
                         <Typography style={{fontSize:'15pt'}}>{idNamePair.name}</Typography>
-                        <Typography style={{fontSize:'8pt'}}>{"By: "+idNamePair.author}</Typography>
+                        {authorName}
                     </Box>
                 </div>
                 <div id="right-item-button">
                     <Box sx={{ p: 1 }}>
-                        <IconButton onClick={handLikes} aria-label='like'>
+                        <IconButton disabled={auth.guess} onClick={handLikes} aria-label='like'>
                             <ThumbUpIcon style={{fontSize:'20pt'}} />
                             <Typography style={{fontSize:'10pt'}}>{idNamePair.likes}</Typography>
                         </IconButton>
 
-                        <IconButton onClick={handDislikes} aria-label='dislike'>
+                        <IconButton disabled={auth.guess} onClick={handDislikes} aria-label='dislike'>
                             <ThumbDownIcon style={{fontSize:'20pt'}} />
                             <Typography style={{fontSize:'10pt'}}>{idNamePair.dislikes}</Typography>
                         </IconButton>
@@ -255,7 +273,7 @@ function ListCard(props) {
                     {
                         idNamePair.comment.map((pair) => (
                             <ListItem className="item-comment" >
-                            <Typography className="comment-text" variant="h6">{pair}</Typography>
+                                <Typography className="comment-text" variant="subtitle2">{pair.split("|")[0]}<br/>{pair.split("|")[1]}</Typography>
                             </ListItem>
                         ))
                     }
@@ -263,6 +281,7 @@ function ListCard(props) {
 
                 <div id='add-comment'>
                     <TextField
+                        disabled={auth.guess||!idNamePair.ispublished}
                         fullWidth
                         sx={{bgcolor: 'background.paper' }}
                         inputProps={{style: {fontSize: 9}}}
@@ -299,6 +318,12 @@ function ListCard(props) {
 
     if(!idNamePair.ispublished){
         if(store.userPage||store.allListPage||store.communityPage||auth.guess){
+            cardElement=null;
+        }
+    }
+
+    if(store.communityPage){
+        if(idNamePair.votes[0]==0){
             cardElement=null;
         }
     }

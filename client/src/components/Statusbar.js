@@ -38,6 +38,7 @@ function Statusbar() {
         }else{
             return(
                 <div id="top5-statusbar">
+                    <Typography variant="h4">{store.listName}</Typography>
                 </div>
             );
         }

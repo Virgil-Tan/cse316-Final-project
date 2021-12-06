@@ -111,20 +111,16 @@ function AuthContextProvider(props) {
     }
 
     auth.registerUser = async function(userData, store) {
+        console.log("cnm")
         const response = await api.registerUser(userData);      
         if(response.status === 202){
             setwarning(response.data.errorMessage);
             handleOpen();
         }else{
             if (response.status === 200) {
-                authReducer({
-                    type: AuthActionType.REGISTER_USER,
-                    payload: {
-                        user: response.data.user
-                    }
-                })
-                history.push("/");
-                store.loadIdNamePairs();
+                console.log("cnm")
+                history.replace('/login');
+                
             }
         }
     }
